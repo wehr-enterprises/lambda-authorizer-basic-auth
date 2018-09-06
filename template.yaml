@@ -19,6 +19,7 @@ Resources:
             CodeUri: lambda_authorizer_basic_auth/build/
             Handler: app.lambda_handler
             Runtime: python2.7
+            Tracing: Active
             Policies:
                 - DynamoDBReadPolicy:
                     TableName: !Ref LambdaAuthorizerBasicAuthUserTable 
