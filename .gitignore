@@ -105,3 +105,4 @@ venv.bak/
 
 # AWS SAM
 packaged.yaml
+samconfig.toml
