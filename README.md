@@ -4,11 +4,13 @@ This is a sample template for lambda-authorizer-basic-auth - Below is a brief ex
 
 ```bash
 .
-├── README.md                   <-- This instructions file
 ├── lambda_authorizer_basic_auth                 <-- Source code for a lambda function
+│   ├── app.py                  <-- Lambda function code
 │   ├── __init__.py
-│   └── app.py                  <-- Lambda function code
-├── requirements.txt            <-- Python dependencies
+│   └── requirements.txt        <-- Application dependencies
+├── LICENSE                     <-- License for this project
+├── NOTICE.txt
+├── README.md                   <-- This instructions file
 ├── template.yaml               <-- SAM template
 └── tests                       <-- Unit tests
     └── unit
@@ -18,28 +20,12 @@ This is a sample template for lambda-authorizer-basic-auth - Below is a brief ex
 
 ## Requirements
 
-* AWS CLI already configured with at least PowerUser permission
+* [AWS SAM CLI >v0.33.1](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
 * [Python 2.7 installed](https://www.python.org/downloads/)
 * [Docker installed](https://www.docker.com/community-edition)
 * [Python Virtual Environment](http://docs.python-guide.org/en/latest/dev/virtualenvs/)
 
 ## Setup process
-
-### Installing dependencies
-
-[AWS Lambda requires a flat folder](https://docs.aws.amazon.com/lambda/latest/dg/lambda-python-how-to-create-deployment-package.html) with the application as well as its dependencies. Therefore, we need to have a 2 step process in order to enable local testing as well as packaging/deployment later on - This consist of two commands you can run as follows:
-
-```bash
-pip install -r requirements.txt -t lambda_authorizer_basic_auth/build/
-cp lambda_authorizer_basic_auth/*.py lambda_authorizer_basic_auth/build/
-```
-
-1. Step 1 install our dependencies into ``build`` folder 
-2. Step 2 copies our application into ``build`` folder
-
-**NOTE:** As you change your application code as well as dependencies during development you'll need to make sure these steps are repeated in order to execute your Lambda and/or API Gateway locally.
-
-### Local development
 
 ## Packaging and deployment
 
@@ -53,40 +39,27 @@ AWS Lambda Python runtime requires a flat folder with all dependencies including
             CodeUri: lambda_authorizer_basic_auth/
             ...
 ```
+### Installing dependencies
 
-Firstly, we need a `S3 bucket` where we can upload our Lambda functions packaged as ZIP before we deploy anything - If you don't have a S3 bucket to store code artifacts then this is a good time to create one:
+AWS SAM CLI has the ability to include required dependencies for Python based applications. It looks for a `requirements.txt` file in the `CodeUri` path of the application. To bundle this application's dependencies in with the application, execute `sam build`
 
 ```bash
-aws s3 mb s3://BUCKET_NAME
+sam build
 ```
 
-Next, run the following command to package our Lambda function to S3:
+This will execute a pip install of the packages listed in the `requirements.txt`
+
+**NOTE:** As you change your application code as well as dependencies during development you'll need to make sure these steps are repeated in order to execute your Lambda and/or API Gateway locally.
+
+### Deploying
+
+Next, execute `sam deploy -g` to launch the guided deployment interface that will ask you some questions about your desired configuration at deployment. You can read more about this [here](https://aws.amazon.com/blogs/compute/a-simpler-deployment-experience-with-aws-sam-cli/):
 
 ```bash
-sam package \
-    --template-file template.yaml \
-    --output-template-file packaged.yaml \
-    --s3-bucket REPLACE_THIS_WITH_YOUR_S3_BUCKET_NAME
+sam deploy -g
 ```
 
-Next, the following command will create a Cloudformation Stack and deploy your SAM resources.
-
-```bash
-sam deploy \
-    --template-file packaged.yaml \
-    --stack-name lambda-authorizer-basic-auth \
-    --capabilities CAPABILITY_IAM
-```
-
-> **See [Serverless Application Model (SAM) HOWTO Guide](https://github.com/awslabs/serverless-application-model/blob/master/HOWTO.md) for more details in how to get started.**
-
-After deployment is complete you can run the following command to retrieve the API Gateway Endpoint URL:
-
-```bash
-aws cloudformation describe-stacks \
-    --stack-name lambda-authorizer-basic-auth \
-    --query 'Stacks[].Outputs'
-``` 
+> **See [Getting Started with AWS SAM ](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-getting-started.html) for more details in how to get started.**
 
 ## Testing
 
@@ -115,27 +88,8 @@ virtualenv .venv
 pip install -r requirements.txt
 ```
 
-
 **NOTE:** You can find more information about Virtual Environment at [Python Official Docs here](https://docs.python.org/3/tutorial/venv.html). Alternatively, you may want to look at [Pipenv](https://github.com/pypa/pipenv) as the new way of setting up development workflows
 ## AWS CLI commands
-
-AWS CLI commands to package, deploy and describe outputs defined within the cloudformation stack:
-
-```bash
-sam package \
-    --template-file template.yaml \
-    --output-template-file packaged.yaml \
-    --s3-bucket REPLACE_THIS_WITH_YOUR_S3_BUCKET_NAME
-
-sam deploy \
-    --template-file packaged.yaml \
-    --stack-name lambda-authorizer-basic-auth \
-    --capabilities CAPABILITY_IAM \
-    --parameter-overrides MyParameterSample=MySampleValue
-
-aws cloudformation describe-stacks \
-    --stack-name lambda-authorizer-basic-auth --query 'Stacks[].Outputs'
-```
 
 ## Bringing to the next level
 
