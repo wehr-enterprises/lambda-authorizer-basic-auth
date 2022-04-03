@@ -19,8 +19,8 @@ patch_all()
 
 # Static code used for DynamoDB connection and logging
 dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table(os.environ['TABLE_NAME'])
-log_level = os.environ['LOG_LEVEL']
+table = dynamodb.Table(os.environ.get('TABLE_NAME', 'lambda-authorizer-basic-auth-users'))
+log_level = os.environ.get('LOG_LEVEL', 'INFO')
 log = logging.getLogger(__name__)
 logging.getLogger().setLevel(log_level)
 

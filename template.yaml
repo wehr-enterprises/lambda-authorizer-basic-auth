@@ -23,10 +23,6 @@ Resources:
             Policies:
                 - DynamoDBReadPolicy:
                     TableName: !Ref LambdaAuthorizerBasicAuthUserTable 
-            Environment:
-                Variables:
-                    TABLE_NAME: lambda-authorizer-basic-auth-users
-                    LOG_LEVEL: INFO
 
     LambdaAuthorizerBasicAuthUserTable:
         Type: AWS::Serverless::SimpleTable
