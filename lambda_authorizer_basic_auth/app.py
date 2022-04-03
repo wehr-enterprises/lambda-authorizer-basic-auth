@@ -12,8 +12,8 @@ import logging
 import base64
 
 import boto3
-from aws_xray_sdk.core import xray_recorder
-from aws_xray_sdk.core import patch_all
+# from aws_xray_sdk.core import xray_recorder
+# from aws_xray_sdk.core import patch_all
 
 patch_all()
 
