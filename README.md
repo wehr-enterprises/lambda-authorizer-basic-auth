@@ -21,7 +21,7 @@ This is a sample template for lambda-authorizer-basic-auth - Below is a brief ex
 ## Requirements
 
 * [AWS SAM CLI >v0.33.1](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
-* [Python 2.7 installed](https://www.python.org/downloads/)
+* [Python 3.8 installed](https://www.python.org/downloads/)
 * [Docker installed](https://www.docker.com/community-edition)
 * [Python Virtual Environment](http://docs.python-guide.org/en/latest/dev/virtualenvs/)
 
@@ -76,7 +76,7 @@ python -m pytest tests/ -v
 # Appendix
 
 ### Python Virtual environment
-**In case you're new to this**, python2 `virtualenv` module is not available in the standard library so we need to install it and then we can install our dependencies:
+**In case you're new to this**, python3 `virtualenv` module is not available in the standard library so we need to install it and then we can install our dependencies:
 
 1. Create a new virtual environment
 2. Install dependencies in the new virtual environment
