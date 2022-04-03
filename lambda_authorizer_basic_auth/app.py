@@ -12,61 +12,104 @@ import logging
 import base64
 
 import boto3
+
 # from aws_xray_sdk.core import xray_recorder
 # from aws_xray_sdk.core import patch_all
 # patch_all()
 
 # Static code used for DynamoDB connection and logging
-dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table(os.environ.get('TABLE_NAME', 'lambda-authorizer-basic-auth-users'))
-log_level = os.environ.get('LOG_LEVEL', 'INFO')
+dynamodb = boto3.resource("dynamodb", region_name="us-east-1")
+table = dynamodb.Table(
+    os.environ.get("TABLE_NAME", "lambda-authorizer-basic-auth-users")
+)
+log_level = os.environ.get("LOG_LEVEL", "DEBUG")
 log = logging.getLogger(__name__)
 logging.getLogger().setLevel(log_level)
 
+ERR_401_MISSING = {
+    "status": "401",
+    "headers": {
+        "www-authenticate": [
+            {"key": "WWW-Authenticate", "value": 'Basic realm="auth required"'}
+        ],
+        "edge-auth-error": [
+            {"key": "Edge-Auth-Error", "value": "missing authorization header"}
+        ],
+    },
+}
+
+ERR_401_INVALID = {
+    "status": "400",
+    "headers": {
+        "edge-auth-error": [
+            {"key": "Edge-Auth-Error", "value": "invalid authorization header"}
+        ]
+    },
+}
+
+ERR_403_SHH = {
+    "status": "404",
+    "headers": {
+        "edge-auth-error": [{"key": "Edge-Auth-Error", "value": "nobody home"}]
+    },
+}
+
 
 def lambda_handler(event, context):
-    request = event['Records'][0]['cf']['request']
-    headers = request['headers']
-    response = event['Records'][0]['cf']['response']
-    print("headers: " + json.dumps(headers))
 
     try:
+        request = event["Records"][0]["cf"]["request"]
+        headers = request.get("headers", {})
+        print("headers: " + json.dumps(headers))
 
-        # Get authorization header in lowercase
-        authorization_header = {k.lower(): v for k, v in headers.items() if k.lower() == 'authorization'}
-        log.debug("authorization: " + json.dumps(authorization_header))
+        auth_header = headers.get("authorization", [{}])[0].get("value")
+        if auth_header is None or not str(auth_header).lower().strip().startswith(
+            "basic"
+        ):
+            return ERR_401_MISSING
 
-        # Get the username:password hash from the authorization header
-        username_password_hash = authorization_header['authorization'].split()[1]
-        log.debug("username_password_hash: " + username_password_hash)
+        auth_encoded = auth_header.strip().split()[1]
+        log.debug("auth_encoded: " + auth_encoded)
 
-        # Decode username_password_hash and get username
-        username = base64.standard_b64decode(username_password_hash).split(':')[0]
+        auth = base64.b64decode(auth_encoded.encode("utf-8")).decode("utf-8")
+        if not ":" in auth:
+            return ERR_401_INVALID
+
+        username, token = auth.split(":", maxsplit=1)
         log.debug("username: " + username)
 
         # Get the password from DynamoDB for the username
         item = table.get_item(ConsistentRead=True, Key={"username": username})
-        if item.get('Item') is not None:
+        if item.get("Item") is not None:
             log.debug("item: " + json.dumps(item))
-            ddb_password = item.get('Item').get('password')
+            ddb_password = item.get("Item").get("password")
             log.debug("ddb_password:" + json.dumps(ddb_password))
 
             if ddb_password is not None:
-                ddb_username_password = (username + ":" + ddb_password)
-                ddb_username_password_hash = base64.standard_b64encode(ddb_username_password)
+                ddb_username_password = username + ":" + ddb_password
+                ddb_username_password_hash = base64.b64encode(
+                    ddb_username_password.encode()
+                ).decode()
                 log.debug("ddb_username_password_hash:" + ddb_username_password_hash)
-                if username_password_hash == ddb_username_password_hash:
-                    pass
+                if str(auth_encoded) == str(ddb_username_password_hash):
                     log.info("password ok for: " + username)
+                    return request
                 else:
-                    raise Exception('Unauthorized - 2480')
                     log.info("password does not match for: " + username)
+                    return ERR_403_SHH
             else:
-                raise Exception('Unauthorized - 2364')
                 log.info("No password found for username:" + username)
+                raise Exception("USER")
         else:
-            raise Exception('Unauthorized - 2364')
+            log.info("No username:" + username)
+            raise Exception("user")
 
-        return response
-    except Exception:
-        raise Exception('Unauthorized')
+    except Exception as exc:
+        return _make_err_500(f"oh no: {exc}")
+
+
+def _make_err_500(msg: str) -> dict:
+    return {
+        "status": "500",
+        "headers": {"edge-auth-error": [{"key": "Edge-Auth-Error", "value": msg}]},
+    }
