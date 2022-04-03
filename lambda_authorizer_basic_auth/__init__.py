@@ -5,3 +5,5 @@
    for the specific language governing permissions and limitations under
    the License.
 """
+import os
+os.environ['AWS_DEFAULT_REGION'] = 'us-east-1'
